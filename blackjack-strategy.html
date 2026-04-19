@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BlackJack Pro Strategy</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --felt: #0a2e18;
+  --felt2: #0f3d22;
+  --gold: #c8a84b;
+  --gold2: #e8cc7a;
+  --red: #b83232;
+  --cream: #f5f0e4;
+  --dim: #6a8a6a;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--felt);
+  color: var(--cream);
+  font-family: 'IBM Plex Mono', monospace;
+  min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(200,168,75,0.12) 0%, transparent 60%),
+    repeating-linear-gradient(0deg, transparent, transparent 60px, rgba(255,255,255,0.012) 60px, rgba(255,255,255,0.012) 61px),
+    repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(255,255,255,0.012) 60px, rgba(255,255,255,0.012) 61px);
+}
+header { text-align: center; padding: 2.5rem 1rem 1.5rem; }
+.suits { font-size: 1.2rem; letter-spacing: 0.8rem; color: rgba(200,168,75,0.4); margin-bottom: 0.8rem; }
+h1 { font-family: 'Cormorant Garamond', serif; font-size: clamp(2.4rem, 7vw, 4.5rem); font-weight: 700; color: var(--gold); text-shadow: 0 0 60px rgba(200,168,75,0.25); line-height: 1; letter-spacing: 0.04em; }
+.tagline { font-size: 0.62rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--dim); margin-top: 0.6rem; }
+nav { display: flex; justify-content: center; gap: 0.3rem; padding: 1.2rem 1rem; flex-wrap: wrap; background: rgba(0,0,0,0.2); border-top: 1px solid rgba(200,168,75,0.1); border-bottom: 1px solid rgba(200,168,75,0.1); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(8px); }
+.tab { background: transparent; border: 1px solid rgba(200,168,75,0.25); color: var(--dim); font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.45rem 0.9rem; cursor: pointer; transition: all 0.2s; border-radius: 2px; }
+.tab:hover { border-color: var(--gold); color: var(--gold2); }
+.tab.active { background: var(--gold); border-color: var(--gold); color: #1a0f00; font-weight: 500; }
+main { max-width: 920px; margin: 0 auto; padding: 2rem 1rem 5rem; }
+.section { display: none; animation: fadeIn 0.3s ease; }
+.section.active { display: block; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+.sec-head { margin-bottom: 1.8rem; }
+.sec-head h2 { font-family: 'Cormorant Garamond', serif; font-size: 1.9rem; font-weight: 700; color: var(--gold); }
+.sec-head p { font-size: 0.68rem; color: var(--dim); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 0.2rem; }
+.callout { background: linear-gradient(135deg, rgba(200,168,75,0.1), rgba(200,168,75,0.03)); border-left: 3px solid var(--gold); padding: 1rem 1.25rem; margin: 1.2rem 0; font-size: 0.72rem; line-height: 1.8; color: #c8dcc8; border-radius: 0 3px 3px 0; }
+.callout strong { color: var(--gold2); }
+.callout.danger { border-left-color: var(--red); background: rgba(184,50,50,0.08); }
+.callout.good { border-left-color: #2a8a4a; background: rgba(42,138,74,0.08); }
+.cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.9rem; margin: 1.5rem 0; }
+.rcard { background: rgba(255,255,255,0.03); border: 1px solid rgba(200,168,75,0.12); border-radius: 4px; padding: 1.25rem; transition: border-color 0.2s; }
+.rcard:hover { border-color: rgba(200,168,75,0.3); }
+.rcard-icon { font-size: 1.4rem; margin-bottom: 0.6rem; }
+.rcard h3 { font-family: 'Cormorant Garamond', serif; color: var(--gold2); font-size: 0.95rem; margin-bottom: 0.4rem; }
+.rcard p { font-size: 0.68rem; line-height: 1.7; color: #99b599; }
+.table-wrap { overflow-x: auto; margin: 1.2rem 0; border-radius: 4px; border: 1px solid rgba(200,168,75,0.12); }
+table { width: 100%; border-collapse: collapse; font-size: 0.62rem; min-width: 500px; }
+thead th { background: rgba(200,168,75,0.15); color: var(--gold); padding: 0.5rem 0.3rem; text-align: center; font-weight: 500; border: 1px solid rgba(200,168,75,0.08); }
+tbody tr:hover td { filter: brightness(1.2); }
+td { padding: 0.32rem 0.2rem; text-align: center; border: 1px solid rgba(255,255,255,0.04); font-weight: 500; cursor: default; font-size: 0.6rem; transition: filter 0.15s; }
+td.row-label { background: rgba(200,168,75,0.08); color: var(--gold); font-size: 0.62rem; text-align: left; padding-left: 0.5rem; min-width: 65px; white-space: nowrap; }
+.H  { background: #5a1515; color: #f08080; }
+.S  { background: #0f3a1e; color: #70d890; }
+.D  { background: #0f2050; color: #80b8f8; }
+.SP { background: #2e0f50; color: #c880f8; }
+.SR { background: #402e00; color: #e8b830; }
+.DH { background: #3a2515; color: #e0a060; }
+.DS { background: #153a28; color: #60e8a8; }
+.legend { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.8rem; font-size: 0.6rem; }
+.leg { display: flex; align-items: center; gap: 0.35rem; }
+.leg-box { width: 22px; height: 16px; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.55rem; }
+.advisor-wrap { background: rgba(0,0,0,0.3); border: 1px solid rgba(200,168,75,0.2); border-radius: 6px; padding: 1.8rem; margin-top: 1.5rem; }
+.advisor-wrap h3 { font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; color: var(--gold); margin-bottom: 0.3rem; }
+.advisor-wrap .sub { font-size: 0.62rem; color: var(--dim); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1.5rem; }
+.advisor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-bottom: 1.5rem; }
+@media (max-width: 480px) { .advisor-grid { grid-template-columns: 1fr; } }
+.field label { display: block; font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); margin-bottom: 0.4rem; }
+.field select { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(200,168,75,0.2); color: var(--cream); font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; padding: 0.55rem 0.75rem; border-radius: 3px; outline: none; -webkit-appearance: none; appearance: none; cursor: pointer; }
+.field select:focus { border-color: var(--gold); }
+.field select option { background: #0a2e18; }
+.check-row { display: flex; gap: 0.6rem; align-items: center; margin-top: 0.6rem; }
+.check-row label { font-size: 0.65rem; color: #99b599; letter-spacing: normal; text-transform: none; margin: 0; cursor: pointer; }
+.check-row input[type=checkbox] { accent-color: var(--gold); width: 14px; height: 14px; cursor: pointer; }
+#advisor-btn { width: 100%; background: var(--gold); border: none; color: #1a0f00; font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; padding: 0.75rem; border-radius: 3px; cursor: pointer; transition: background 0.2s, transform 0.1s; }
+#advisor-btn:hover { background: var(--gold2); }
+#advisor-btn:active { transform: scale(0.99); }
+#advice-box { margin-top: 1.2rem; display: none; animation: fadeIn 0.3s ease; }
+.advice-action { font-family: 'Cormorant Garamond', serif; font-size: 2.2rem; font-weight: 700; padding: 1rem 1.5rem; border-radius: 4px; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.75rem; }
+.advice-reason { font-size: 0.7rem; line-height: 1.7; color: #b5c9b5; padding: 0.1rem 0; }
+.action-H  { background: rgba(90,21,21,0.7); color: #f08080; border: 1px solid #8b2020; }
+.action-S  { background: rgba(15,58,30,0.7); color: #70d890; border: 1px solid #1a5a30; }
+.action-D  { background: rgba(15,32,80,0.7); color: #80b8f8; border: 1px solid #1a3080; }
+.action-SP { background: rgba(46,15,80,0.7); color: #c880f8; border: 1px solid #4a1a80; }
+.action-SR { background: rgba(64,46,0,0.7); color: #e8b830; border: 1px solid #806010; }
+.action-bust { background: rgba(100,10,10,0.8); color: #ff6060; border: 1px solid #a02020; }
+.tip-item { display: flex; gap: 1.2rem; padding: 1.3rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: flex-start; }
+.tip-n { font-family: 'Cormorant Garamond', serif; font-size: 2rem; font-weight: 700; color: rgba(200,168,75,0.2); line-height: 1; flex-shrink: 0; width: 2.2rem; padding-top: 0.1rem; }
+.tip-body h4 { font-family: 'Cormorant Garamond', serif; color: var(--gold2); font-size: 1rem; margin-bottom: 0.3rem; }
+.tip-body p { font-size: 0.68rem; line-height: 1.75; color: #99b599; }
+.badge { display: inline-block; font-size: 0.55rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.1rem 0.45rem; border-radius: 2px; margin-left: 0.4rem; vertical-align: middle; }
+.badge-red { background: rgba(184,50,50,0.2); border: 1px solid rgba(184,50,50,0.5); color: #f08080; }
+.badge-green { background: rgba(42,138,74,0.2); border: 1px solid rgba(42,138,74,0.5); color: #70d890; }
+.br-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.9rem; margin: 1.5rem 0; }
+.br-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(200,168,75,0.12); border-radius: 4px; padding: 1.2rem; text-align: center; }
+.br-num { font-family: 'Cormorant Garamond', serif; font-size: 2.4rem; font-weight: 700; color: var(--gold); line-height: 1; }
+.br-label { font-size: 0.62rem; color: var(--dim); margin-top: 0.4rem; line-height: 1.5; text-transform: uppercase; letter-spacing: 0.08em; }
+.prog-row { margin-bottom: 1rem; }
+.prog-head { display: flex; justify-content: space-between; font-size: 0.65rem; color: #99b599; margin-bottom: 0.3rem; }
+.prog-bg { background: rgba(255,255,255,0.06); border-radius: 2px; height: 7px; overflow: hidden; }
+.prog-fill { height: 100%; border-radius: 2px; }
+footer { text-align: center; padding: 2rem; color: rgba(106,138,106,0.35); font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase; border-top: 1px solid rgba(200,168,75,0.07); }
+.card-picker { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.4rem; }
+.card-btn { background: rgba(245,240,228,0.07); border: 1px solid rgba(200,168,75,0.2); color: var(--cream); font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; font-weight: 500; padding: 0.4rem 0.6rem; border-radius: 3px; cursor: pointer; transition: all 0.15s; min-width: 2.4rem; text-align: center; }
+.card-btn:hover { border-color: var(--gold); background: rgba(200,168,75,0.12); }
+.card-btn.selected { background: var(--gold); border-color: var(--gold); color: #1a0f00; font-weight: 700; }
+</style>
+</head>
+<body>
+<header>
+  <div class="suits">♠ ♥ ♦ ♣</div>
+  <h1>BlackJack Strategy</h1>
+  <p class="tagline">Estrategia básica óptima · Sin contar cartas · Ventaja de la casa −0.5%</p>
+</header>
+
+<nav>
+  <button class="tab active" onclick="show('reglas',this)">Fundamentos</button>
+  <button class="tab" onclick="show('tabla',this)">Tablas</button>
+  <button class="tab" onclick="show('advisor',this)">Consejero</button>
+  <button class="tab" onclick="show('tips',this)">Reglas de Oro</button>
+  <button class="tab" onclick="show('bankroll',this)">Bankroll</button>
+</nav>
+
+<main>
+
+<!-- FUNDAMENTOS -->
+<div class="section active" id="reglas">
+  <div class="sec-head">
+    <h2>Fundamentos del juego</h2>
+    <p>Lo que debes dominar antes de sentarte a la mesa</p>
+  </div>
+  <div class="callout good">
+    <strong>La ventaja de la casa en Blackjack es la más baja de cualquier juego de casino (~0.5%)</strong> — pero solo si aplicas la estrategia correcta. Sin estrategia, esa ventaja sube al 2–4%. Esta guía te lleva de 4% a 0.5%.
+  </div>
+  <div class="cards-grid">
+    <div class="rcard"><div class="rcard-icon">🎯</div><h3>El objetivo real</h3><p>No es llegar a 21. Es <strong>superar al dealer sin pasarte</strong>. A veces plantarte con 14 es la jugada correcta. El dealer tiene reglas fijas que tú puedes predecir.</p></div>
+    <div class="rcard"><div class="rcard-icon">🃏</div><h3>Valor de cartas</h3><p>2–10 = valor nominal. J, Q, K = 10 puntos. <strong>As = 1 u 11</strong> (lo que más te convenga). Un as flexible se llama "mano blanda".</p></div>
+    <div class="rcard"><div class="rcard-icon">🤖</div><h3>El dealer es predecible</h3><p>El dealer <strong>siempre pide carta con 16 o menos</strong> y se planta con 17 o más. Esta rigidez es tu ventaja.</p></div>
+    <div class="rcard"><div class="rcard-icon">📊</div><h3>La carta del dealer importa</h3><p>Con 4, 5 o 6 visible, el dealer tiene más del 40% de probabilidad de pasarse. Con 7–As, tiene mano alta casi garantizada.</p></div>
+    <div class="rcard"><div class="rcard-icon">💥</div><h3>Mano dura vs blanda</h3><p><strong>Mano dura:</strong> sin As, o As que vale 1. <strong>Mano blanda:</strong> As que puede valer 11 sin pasarte. Las blandas permiten doblar con más seguridad.</p></div>
+    <div class="rcard"><div class="rcard-icon">✂️</div><h3>Dividir pares</h3><p>Solo con un par. <strong>Ases y 8s: siempre divide.</strong> 10s y 5s: nunca dividas. El resto depende de la carta del dealer.</p></div>
+  </div>
+  <div class="callout danger"><strong>Nunca tomes seguro (Insurance).</strong> Es una apuesta separada con ventaja del 6–7% para la casa. No importa qué tan buena sea tu mano — siempre rechaza el seguro.</div>
+  <div class="callout"><strong>Busca mesas 3:2, no 6:5.</strong> Si el BlackJack paga 6:5 en lugar de 3:2, la ventaja de la casa sube 1.4% extra — más de lo que esta estrategia puede recuperar. Elige bien la mesa antes de sentarte.</div>
+</div>
+
+<!-- TABLAS -->
+<div class="section" id="tabla">
+  <div class="sec-head">
+    <h2>Tablas de estrategia básica</h2>
+    <p>Válidas para cualquier número de mazos · Matemáticamente óptimas</p>
+  </div>
+  <div class="legend">
+    <div class="leg"><div class="leg-box H" style="background:#5a1515;color:#f08080">H</div><span>Pedir carta (Hit)</span></div>
+    <div class="leg"><div class="leg-box S" style="background:#0f3a1e;color:#70d890">S</div><span>Plantarse (Stand)</span></div>
+    <div class="leg"><div class="leg-box D" style="background:#0f2050;color:#80b8f8">D</div><span>Doblar (Double)</span></div>
+    <div class="leg"><div class="leg-box SP" style="background:#2e0f50;color:#c880f8">SP</div><span>Dividir (Split)</span></div>
+    <div class="leg"><div class="leg-box SR" style="background:#402e00;color:#e8b830">SR</div><span>Rendirse (Surrender)</span></div>
+    <div class="leg"><div class="leg-box DH" style="background:#3a2515;color:#e0a060">Dh</div><span>Dobla si puedes, si no Pide</span></div>
+    <div class="leg"><div class="leg-box DS" style="background:#153a28;color:#60e8a8">Ds</div><span>Dobla si puedes, si no Plántate</span></div>
+  </div>
+
+  <br>
+  <div class="callout"><strong>Tabla 1 — Mano Dura</strong> (sin As, o As que cuenta como 1)</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Tu mano</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th><th>As</th></tr></thead>
+      <tbody>
+        <tr><td class="row-label">8 o menos</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td></tr>
+        <tr><td class="row-label">9</td><td class="H">H</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td></tr>
+        <tr><td class="row-label">10</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="H">H</td><td class="H">H</td></tr>
+        <tr><td class="row-label">11</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td></tr>
+        <tr><td class="row-label">12</td><td class="H">H</td><td class="H">H</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td></tr>
+        <tr><td class="row-label">13</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td></tr>
+        <tr><td class="row-label">14</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td></tr>
+        <tr><td class="row-label">15</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="SR">SR</td><td class="SR">SR</td></tr>
+        <tr><td class="row-label">16</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="H">H</td><td class="H">H</td><td class="SR">SR</td><td class="SR">SR</td><td class="SR">SR</td></tr>
+        <tr><td class="row-label">17+</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout"><strong>Tabla 2 — Mano Blanda</strong> (As que puede contar como 11)</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Tu mano</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th><th>As</th></tr></thead>
+      <tbody>
+        <tr><td class="row-label">A+2 (13)</td><td class="H">H</td><td class="H">H</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td></tr>
+        <tr><td class="row-label">A+3 (14)</td><td class="H">H</td><td class="H">H</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td></tr>
+        <tr><td class="row-label">A+4 (15)</td><td class="H">H</td><td class="H">H</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td></tr>
+        <tr><td class="row-label">A+5 (16)</td><td class="H">H</td><td class="H">H</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td></tr>
+        <tr><td class="row-label">A+6 (17)</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td></tr>
+        <tr><td class="row-label">A+7 (18)</td><td class="DS">Ds</td><td class="DS">Ds</td><td class="DS">Ds</td><td class="DS">Ds</td><td class="DS">Ds</td><td class="S">S</td><td class="S">S</td><td class="H">H</td><td class="H">H</td><td class="H">H</td></tr>
+        <tr><td class="row-label">A+8 (19)</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td></tr>
+        <tr><td class="row-label">A+9 (20)</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout"><strong>Tabla 3 — Pares</strong> (¿dividir o no?)</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Tu par</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th><th>As</th></tr></thead>
+      <tbody>
+        <tr><td class="row-label">A — A</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td></tr>
+        <tr><td class="row-label">10—10</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td><td class="S">S</td></tr>
+        <tr><td class="row-label">9 — 9</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="S">S</td><td class="SP">SP</td><td class="SP">SP</td><td class="S">S</td><td class="S">S</td></tr>
+        <tr><td class="row-label">8 — 8</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td></tr>
+        <tr><td class="row-label">7 — 7</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td></tr>
+        <tr><td class="row-label">6 — 6</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td></tr>
+        <tr><td class="row-label">5 — 5</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="DH">Dh</td><td class="H">H</td><td class="H">H</td></tr>
+        <tr><td class="row-label">4 — 4</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="SP">SP</td><td class="SP">SP</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td></tr>
+        <tr><td class="row-label">3 — 3</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td></tr>
+        <tr><td class="row-label">2 — 2</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="SP">SP</td><td class="H">H</td><td class="H">H</td><td class="H">H</td><td class="H">H</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- CONSEJERO -->
+<div class="section" id="advisor">
+  <div class="sec-head">
+    <h2>Consejero de mano</h2>
+    <p>Selecciona tus cartas — te guío carta por carta</p>
+  </div>
+  <div class="callout">Elige la carta visible del dealer y tus cartas. Si el consejo es pedir, aparecerá un selector para agregar la siguiente carta y seguir la mano completa.</div>
+  <div class="advisor-wrap">
+    <h3>¿Qué hago?</h3>
+    <p class="sub">Selecciona las cartas tal como las ves en la mesa</p>
+
+    <!-- Dealer -->
+    <div class="field" style="margin-bottom:1.2rem">
+      <label>🏦 Carta visible del dealer</label>
+      <div class="card-picker" id="dealer-picker"></div>
+    </div>
+
+    <!-- Tu mano dinámica -->
+    <div class="field" style="margin-bottom:1rem">
+      <label id="hand-label">🃏 Tu mano</label>
+      <div id="hand-summary" style="display:none; margin-bottom:0.6rem; font-size:0.7rem; color:var(--gold2); letter-spacing:0.05em;"></div>
+      <div id="cards-area"></div>
+    </div>
+
+    <button id="advisor-btn" onclick="getAdvice()" style="display:none">▶ &nbsp;VER CONSEJO</button>
+
+    <div id="advice-box" style="margin-top:1.2rem; display:none; animation: fadeIn 0.3s ease;">
+      <div id="advice-action" class="advice-action"></div>
+      <div id="advice-reason" class="advice-reason"></div>
+      <div id="hand-detected" style="font-size:0.62rem;color:var(--dim);margin-top:0.6rem;"></div>
+    </div>
+
+    <button id="reset-btn" onclick="resetHand()" style="display:none; margin-top:1rem; width:100%; background:transparent; border:1px solid rgba(200,168,75,0.3); color:var(--dim); font-family:'IBM Plex Mono',monospace; font-size:0.65rem; letter-spacing:0.15em; text-transform:uppercase; padding:0.6rem; border-radius:3px; cursor:pointer;">↺ &nbsp;NUEVA MANO</button>
+  </div>
+</div>
+
+<!-- TIPS -->
+<div class="section" id="tips">
+  <div class="sec-head">
+    <h2>Reglas de Oro</h2>
+    <p>Las decisiones que más impactan tu porcentaje de victorias</p>
+  </div>
+  <div class="callout good">Estas reglas cubren el 90% de las situaciones en la mesa. Domínalas antes de memorizar las tablas completas.</div>
+  <div style="list-style:none">
+    <div class="tip-item"><div class="tip-n">1</div><div class="tip-body"><h4>Siempre divide Ases y 8s <span class="badge badge-green">Siempre</span></h4><p>Dos Ases son 2 u 12 — una mano horrible. Divídelos para tener dos manos que empiezan en 11. Con 8s tienes 16 — la peor mano posible. Dividirlos te da dos manos que empiezan en 8, con posibilidades de mejorar enormes.</p></div></div>
+    <div class="tip-item"><div class="tip-n">2</div><div class="tip-body"><h4>Nunca dividas 10s ni 5s <span class="badge badge-red">Nunca</span></h4><p>Un 20 es casi imbatible — no lo destruyas en dos manos mediocres. Un par de 5s es 10, la base perfecta para doblar. Dividirlos convierte tu mano fuerte en dos manos débiles.</p></div></div>
+    <div class="tip-item"><div class="tip-n">3</div><div class="tip-body"><h4>Dobla con 11 casi siempre</h4><p>Hay 16 cartas de valor 10 en la baraja (10, J, Q, K) — más que cualquier otro valor. Con 11, tienes la mayor probabilidad estadística de sacar un 10 y llegar a 21. Solo no dobles si el dealer muestra un As.</p></div></div>
+    <div class="tip-item"><div class="tip-n">4</div><div class="tip-body"><h4>Dealer en 4–6: sé conservador <span class="badge badge-green">Tu ventaja</span></h4><p>Cuando el dealer muestra 4, 5 o 6, tiene probabilidad de pasarse superior al 40%. Tu objetivo es simplemente no pasarte tú. Plántate con manos que normalmente pedirías carta. Deja que el dealer se destruya solo.</p></div></div>
+    <div class="tip-item"><div class="tip-n">5</div><div class="tip-body"><h4>Dealer en 7–As: pide hasta 17 <span class="badge badge-red">Zona peligrosa</span></h4><p>El dealer casi seguro tiene una mano fuerte — su carta oculta probablemente vale 10. Si te plantas con 14 o 15, perderás la mayoría de veces. Debes competir y arriesgarte a pedir carta.</p></div></div>
+    <div class="tip-item"><div class="tip-n">6</div><div class="tip-body"><h4>Nunca tomes seguro <span class="badge badge-red">Trampa</span></h4><p>El seguro paga 2:1 pero la probabilidad real de que el dealer tenga Blackjack es solo ~30% cuando muestra As. Matemáticamente pierdes dinero a largo plazo. Sin importar cuánto dinero tengas sobre la mesa, siempre rechaza.</p></div></div>
+    <div class="tip-item"><div class="tip-n">7</div><div class="tip-body"><h4>Elige mesas 3:2, no 6:5</h4><p>Blackjack 6:5 te paga $6 por cada $5. En 3:2 te paga $7.50. Esa diferencia suma 1.4% de ventaja extra a la casa — más de lo que toda la estrategia básica puede recuperar. Revisa el cartel antes de sentarte.</p></div></div>
+    <div class="tip-item"><div class="tip-n">8</div><div class="tip-body"><h4>Usa el surrender con 16 duro</h4><p>Si la mesa permite rendirse, hazlo con 16 duro contra 9, 10 o As del dealer. Pierdes solo el 50% de tu apuesta en lugar de una mano casi seguramente perdida. Es la decisión matemáticamente más correcta.</p></div></div>
+    <div class="tip-item"><div class="tip-n">9</div><div class="tip-body"><h4>Busca mesas S17 (dealer se planta en 17 blando)</h4><p>En mesas H17, el dealer pide carta con As+6 y tiene más opciones de mejorar su mano. Las mesas S17 son más favorables para el jugador. Busca esta regla en el cartel de la mesa antes de sentarte.</p></div></div>
+    <div class="tip-item"><div class="tip-n">10</div><div class="tip-body"><h4>La varianza es normal — el tilt es tu enemigo</h4><p>Incluso con estrategia perfecta puedes perder 10 manos seguidas. Es estadísticamente normal. El error más costoso es "perseguir" pérdidas subiendo apuestas. Mantén apuesta constante y confía en el largo plazo matemático.</p></div></div>
+  </div>
+</div>
+
+<!-- BANKROLL -->
+<div class="section" id="bankroll">
+  <div class="sec-head">
+    <h2>Gestión del dinero</h2>
+    <p>La disciplina financiera es parte inseparable de la estrategia</p>
+  </div>
+  <div class="callout">La estrategia básica minimiza la ventaja de la casa, pero no la elimina. La gestión del bankroll determina cuánto tiempo puedes jugar y si sobrevives a las rachas de mala suerte estadísticamente normales.</div>
+  <div class="br-grid">
+    <div class="br-card"><div class="br-num">20×</div><div class="br-label">Bankroll mínimo recomendado en unidades de apuesta base</div></div>
+    <div class="br-card"><div class="br-num">1–2%</div><div class="br-label">Apuesta máxima por mano como % de tu bankroll total</div></div>
+    <div class="br-card"><div class="br-num">−50%</div><div class="br-label">Stop-loss de sesión: para si llegas a esta pérdida</div></div>
+    <div class="br-card"><div class="br-num">+50%</div><div class="br-label">Take-profit: retira y cierra sesión si llegas aquí</div></div>
+  </div>
+  <div class="callout good"><strong>Ejemplo concreto:</strong> Entras con $200. Apuesta por mano: $5–$10. Stop-loss en $100 (−50%). Take-profit si llegas a $300 (+50%). Con $5/mano tienes 40 apuestas antes del stop — suficiente para superar rachas normales de mala suerte.</div>
+  <div class="callout danger"><strong>Nunca hagas esto:</strong> Apostar más para recuperar pérdidas (Martingala), jugar con dinero que no puedes perder, aumentar apuestas cuando vas perdiendo, o quedarte más tiempo "porque algo me dice que viene mi racha". La racha no existe matemáticamente.</div>
+  <br>
+  <p style="font-size:0.65rem;color:var(--dim);margin-bottom:1rem;letter-spacing:0.1em;text-transform:uppercase">Probabilidad de bust del dealer según carta visible</p>
+  <div class="prog-row"><div class="prog-head"><span>Dealer muestra 6 (su peor carta)</span><span>42%</span></div><div class="prog-bg"><div class="prog-fill" style="width:42%;background:var(--gold)"></div></div></div>
+  <div class="prog-row"><div class="prog-head"><span>Dealer muestra 5</span><span>41%</span></div><div class="prog-bg"><div class="prog-fill" style="width:41%;background:var(--gold)"></div></div></div>
+  <div class="prog-row"><div class="prog-head"><span>Dealer muestra 4</span><span>40%</span></div><div class="prog-bg"><div class="prog-fill" style="width:40%;background:#c8a84baa"></div></div></div>
+  <div class="prog-row"><div class="prog-head"><span>Dealer muestra 3</span><span>37%</span></div><div class="prog-bg"><div class="prog-fill" style="width:37%;background:#c8a84b88"></div></div></div>
+  <div class="prog-row"><div class="prog-head"><span>Dealer muestra 2</span><span>35%</span></div><div class="prog-bg"><div class="prog-fill" style="width:35%;background:#c8a84b66"></div></div></div>
+  <div class="prog-row"><div class="prog-head"><span>Dealer muestra 7</span><span>26%</span></div><div class="prog-bg"><div class="prog-fill" style="width:26%;background:var(--red)"></div></div></div>
+  <div class="prog-row"><div class="prog-head"><span>Dealer muestra 8</span><span>24%</span></div><div class="prog-bg"><div class="prog-fill" style="width:24%;background:#b83232cc"></div></div></div>
+  <div class="prog-row"><div class="prog-head"><span>Dealer muestra 9</span><span>23%</span></div><div class="prog-bg"><div class="prog-fill" style="width:23%;background:#b83232aa"></div></div></div>
+  <div class="prog-row"><div class="prog-head"><span>Dealer muestra 10/J/Q/K</span><span>21%</span></div><div class="prog-bg"><div class="prog-fill" style="width:21%;background:#b8323288"></div></div></div>
+  <div class="prog-row"><div class="prog-head"><span>Dealer muestra As</span><span>17%</span></div><div class="prog-bg"><div class="prog-fill" style="width:17%;background:#b8323255"></div></div></div>
+</div>
+
+</main>
+<footer>BlackJack Strategy Guide · Solo uso educativo · Juega con responsabilidad</footer>
+
+<script>
+const CARDS = [
+  {label:'A', val:11},
+  {label:'2', val:2},{label:'3', val:3},{label:'4', val:4},
+  {label:'5', val:5},{label:'6', val:6},{label:'7', val:7},
+  {label:'8', val:8},{label:'9', val:9},
+  {label:'10', val:10},{label:'J', val:10},{label:'Q', val:10},{label:'K', val:10}
+];
+
+let dealerVal = null;       // numeric value of dealer card
+let playerCards = [];       // array of {label, val} for each card in hand
+let awaitingCard = 0;       // index of next card slot (0=card1, 1=card2, 2+=extras)
+let handFinished = false;
+
+// ── Build dealer picker once ──
+function buildDealerPicker() {
+  const wrap = document.getElementById('dealer-picker');
+  CARDS.forEach((c, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'card-btn';
+    btn.textContent = c.label;
+    btn.onclick = () => {
+      wrap.querySelectorAll('.card-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      dealerVal = c.val;
+      // Reset player hand whenever dealer changes
+      resetPlayerHand();
+    };
+    wrap.appendChild(btn);
+  });
+}
+
+// ── Add a new card slot for the player ──
+function addCardSlot(slotIndex) {
+  const area = document.getElementById('cards-area');
+  const slotLabel = slotIndex < 2
+    ? `Carta ${slotIndex + 1}`
+    : `Carta extra ${slotIndex - 1}`;
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'field';
+  wrapper.style.marginBottom = '0.8rem';
+  wrapper.id = `slot-${slotIndex}`;
+
+  const lbl = document.createElement('label');
+  lbl.textContent = slotLabel;
+  wrapper.appendChild(lbl);
+
+  const picker = document.createElement('div');
+  picker.className = 'card-picker';
+
+  CARDS.forEach((c) => {
+    const btn = document.createElement('button');
+    btn.className = 'card-btn';
+    btn.textContent = c.label;
+    btn.onclick = () => {
+      // Only allow selection if this is the current awaiting slot
+      if (handFinished || slotIndex !== awaitingCard) return;
+      picker.querySelectorAll('.card-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+
+      // Store card
+      playerCards[slotIndex] = { label: c.label, val: c.val };
+      awaitingCard = slotIndex + 1;
+
+      updateHandSummary();
+
+      // Show consejo button once we have at least 2 cards
+      if (playerCards.length >= 2) {
+        document.getElementById('advisor-btn').style.display = 'block';
+        document.getElementById('advice-box').style.display = 'none';
+      }
+    };
+    picker.appendChild(btn);
+  });
+
+  wrapper.appendChild(picker);
+  area.appendChild(wrapper);
+}
+
+function updateHandSummary() {
+  const summary = document.getElementById('hand-summary');
+  if (playerCards.length === 0) { summary.style.display = 'none'; return; }
+  const labels = playerCards.map(c => c.label).join(' + ');
+  const { total, soft } = calcTotal(playerCards);
+  summary.textContent = `${labels} = ${total}${soft ? ' (blanda)' : ''}`;
+  summary.style.display = 'block';
+}
+
+function resetPlayerHand() {
+  playerCards = [];
+  awaitingCard = 0;
+  handFinished = false;
+  document.getElementById('cards-area').innerHTML = '';
+  document.getElementById('hand-summary').style.display = 'none';
+  document.getElementById('advice-box').style.display = 'none';
+  document.getElementById('advisor-btn').style.display = 'none';
+  document.getElementById('reset-btn').style.display = 'none';
+  if (dealerVal !== null) {
+    addCardSlot(0);
+    addCardSlot(1);
+  }
+}
+
+function resetHand() {
+  dealerVal = null;
+  document.querySelectorAll('#dealer-picker .card-btn').forEach(b => b.classList.remove('selected'));
+  resetPlayerHand();
+}
+
+
+
+function finishHand() {
+  handFinished = true;
+  document.getElementById('advisor-btn').style.display = 'none';
+  document.getElementById('reset-btn').style.display = 'block';
+  // Disable all remaining pickers
+  document.querySelectorAll('#cards-area .card-btn').forEach(btn => {
+    const slot = parseInt(btn.closest('[id^="slot-"]')?.id.split('-')[1]);
+    if (slot >= awaitingCard - 1) btn.style.opacity = '0.4';
+  });
+}
+
+function showResult(customLabel, action, reason, handDesc) {
+  const labels = { H:'PIDE CARTA', S:'PLÁNTATE', D:'DOBLA', SP:'DIVIDE', SR:'RÍNDETE', bust:'bust' };
+  const icons  = { H:'🃏', S:'✋', D:'💰', SP:'✂️', SR:'🏳️', bust:'💥' };
+
+  const actionEl = document.getElementById('advice-action');
+  actionEl.className = `advice-action action-${action}`;
+  actionEl.innerHTML = `${icons[action]} ${customLabel || labels[action]}`;
+  document.getElementById('advice-reason').textContent = reason;
+  document.getElementById('hand-detected').textContent = '↳ ' + handDesc;
+  document.getElementById('advice-box').style.display = 'block';
+}
+
+function show(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ══════════════════════════════════════════════════
+// ESTRATEGIA BÁSICA — Multi-deck, dealer H17
+// Verificada contra Wizard of Odds
+// ══════════════════════════════════════════════════
+
+// Calcula el mejor total posible y si la mano es blanda
+function calcTotal(cards) {
+  let total = 0;
+  let aces  = 0;
+  for (const c of cards) {
+    if (c.val === 11) { aces++; total += 11; }
+    else total += c.val;
+  }
+  while (total > 21 && aces > 0) { total -= 10; aces--; }
+  // "soft" = hay al menos 1 As que sigue valiendo 11
+  const soft = aces > 0 && total <= 21;
+  return { total, soft };
+}
+
+// Etiqueta legible de la carta del dealer
+function dLabel(d) {
+  if (d === 11) return 'As';
+  if (d === 10) return '10/J/Q/K';
+  return String(d);
+}
+
+// ──────────────────────────────────────────────────
+// TABLA DE PARES  (solo aplica en primeras 2 cartas)
+// pv = valor de una carta, d = upcard dealer (2-11)
+// Retorna acción o null (null → tratar como mano normal)
+// ──────────────────────────────────────────────────
+function pairAction(pv, d) {
+  // A-A: siempre split
+  if (pv === 11) return 'SP';
+  // 10-10: nunca split
+  if (pv === 10) return 'S';
+  // 9-9: split vs 2-6, 8-9 | stand vs 7, 10, A
+  if (pv === 9)  return ([7,10,11].includes(d)) ? 'S' : 'SP';
+  // 8-8: siempre split
+  if (pv === 8)  return 'SP';
+  // 7-7: split vs 2-7 | hit vs 8+
+  if (pv === 7)  return (d <= 7) ? 'SP' : 'H';
+  // 6-6: split vs 2-6 | hit vs 7+
+  if (pv === 6)  return (d <= 6) ? 'SP' : null; // null → hard 12
+  // 5-5: nunca split → tratar como hard 10
+  if (pv === 5)  return null;
+  // 4-4: split vs 5-6 (DAS) | hit otros
+  if (pv === 4)  return (d === 5 || d === 6) ? 'SP' : null; // null → hard 8
+  // 3-3: split vs 2-7 | hit vs 8+
+  if (pv === 3)  return (d <= 7) ? 'SP' : null;
+  // 2-2: split vs 2-7 | hit vs 8+
+  if (pv === 2)  return (d <= 7) ? 'SP' : null;
+  return null;
+}
+
+// ──────────────────────────────────────────────────
+// TABLA MANO BLANDA  (total con As flexible)
+// Retorna { action, fallback? }
+// ──────────────────────────────────────────────────
+function softAction(total, d, canDouble) {
+  // A+9 = 20, A+10 = 21
+  if (total >= 20) return { a:'S' };
+
+  // A+8 = 19: dobla vs 6, si no plantarse
+  if (total === 19) {
+    if (d === 6 && canDouble) return { a:'D', fb:'S' };
+    return { a:'S' };
+  }
+
+  // A+7 = 18: dobla vs 2-6, planta vs 7-8, pide vs 9-A
+  if (total === 18) {
+    if (canDouble && d >= 3 && d <= 6) return { a:'D', fb:'S' };
+    if (d <= 8) return { a:'S' };
+    return { a:'H' };
+  }
+
+  // A+6 = 17: dobla vs 3-6, pide el resto
+  if (total === 17) {
+    if (canDouble && d >= 3 && d <= 6) return { a:'D', fb:'H' };
+    return { a:'H' };
+  }
+
+  // A+5 = 16: dobla vs 4-6, pide el resto
+  if (total === 16) {
+    if (canDouble && d >= 4 && d <= 6) return { a:'D', fb:'H' };
+    return { a:'H' };
+  }
+
+  // A+4 = 15: dobla vs 4-6, pide el resto
+  if (total === 15) {
+    if (canDouble && d >= 4 && d <= 6) return { a:'D', fb:'H' };
+    return { a:'H' };
+  }
+
+  // A+3 = 14: dobla vs 5-6, pide el resto
+  if (total === 14) {
+    if (canDouble && d >= 5 && d <= 6) return { a:'D', fb:'H' };
+    return { a:'H' };
+  }
+
+  // A+2 = 13: dobla vs 5-6, pide el resto
+  if (total === 13) {
+    if (canDouble && d >= 5 && d <= 6) return { a:'D', fb:'H' };
+    return { a:'H' };
+  }
+
+  return { a:'H' };
+}
+
+// ──────────────────────────────────────────────────
+// TABLA MANO DURA
+// Retorna { action, fallback? }
+// ──────────────────────────────────────────────────
+function hardAction(total, d, canDouble, canSurrender) {
+  // 21: nunca pedir
+  if (total === 21) return { a:'S' };
+
+  // ── Late Surrender (antes de cualquier otra acción) ──
+  if (canSurrender) {
+    if (total === 17 && d === 11)           return { a:'SR' };
+    if (total === 16 && d >= 9)             return { a:'SR' };
+    if (total === 15 && (d === 10||d===11)) return { a:'SR' };
+  }
+
+  // ── Hard 4-8: siempre hit ──
+  if (total <= 8) return { a:'H' };
+
+  // ── Hard 9: dobla vs 3-6, hit otros ──
+  if (total === 9) {
+    if (canDouble && d >= 3 && d <= 6) return { a:'D', fb:'H' };
+    return { a:'H' };
+  }
+
+  // ── Hard 10: dobla vs 2-9, hit vs 10/A ──
+  if (total === 10) {
+    if (canDouble && d >= 2 && d <= 9) return { a:'D', fb:'H' };
+    return { a:'H' };
+  }
+
+  // ── Hard 11: dobla vs 2-10, hit vs A (en H17 multi-deck dobla vs todos) ──
+  if (total === 11) {
+    if (canDouble) return { a:'D', fb:'H' };
+    return { a:'H' };
+  }
+
+  // ── Hard 12: planta vs 4-6, hit el resto ──
+  if (total === 12) {
+    if (d >= 4 && d <= 6) return { a:'S' };
+    return { a:'H' };
+  }
+
+  // ── Hard 13: planta vs 2-6, hit el resto ──
+  if (total === 13) {
+    if (d >= 2 && d <= 6) return { a:'S' };
+    return { a:'H' };
+  }
+
+  // ── Hard 14: planta vs 2-6, hit el resto ──
+  if (total === 14) {
+    if (d >= 2 && d <= 6) return { a:'S' };
+    return { a:'H' };
+  }
+
+  // ── Hard 15: planta vs 2-6, hit el resto ──
+  if (total === 15) {
+    if (d >= 2 && d <= 6) return { a:'S' };
+    return { a:'H' };
+  }
+
+  // ── Hard 16: planta vs 2-6, hit el resto ──
+  if (total === 16) {
+    if (d >= 2 && d <= 6) return { a:'S' };
+    return { a:'H' };
+  }
+
+  // ── Hard 17+: siempre plantarse ──
+  return { a:'S' };
+}
+
+// ──────────────────────────────────────────────────
+// MOTOR PRINCIPAL
+// ──────────────────────────────────────────────────
+function strategy(playerCards, dealer) {
+  const { total, soft } = calcTotal(playerCards);
+  const isFirstTwo   = playerCards.length === 2;
+  const canDouble    = isFirstTwo;
+  const canSurrender = isFirstTwo;
+  const canSplit     = isFirstTwo && playerCards[0].val === playerCards[1].val;
+
+  // ── BUST ──
+  if (total > 21) {
+    return { action:'bust', reason:'Tu total supera 21. La mano termina.' };
+  }
+
+  // ── 21 ──
+  if (total === 21) {
+    return { action:'S', reason:'¡21! No hay nada mejor — plántate siempre.' };
+  }
+
+  // ── PARES (solo primeras 2 cartas) ──
+  if (canSplit) {
+    const pv = playerCards[0].val;
+    const pa = pairAction(pv, dealer);
+    if (pa !== null) {
+      return buildResult(pa, null, pv, dealer, total, soft, 'pair');
+    }
+    // Si pa === null, cae a mano normal (p.ej. 5-5 → hard 10, 6-6 vs 7 → hard 12)
+  }
+
+  // ── MANO BLANDA ──
+  if (soft) {
+    const { a, fb } = softAction(total, dealer, canDouble);
+    return buildResult(a, fb, null, dealer, total, soft, 'soft');
+  }
+
+  // ── MANO DURA ──
+  const { a, fb } = hardAction(total, dealer, canDouble, canSurrender);
+  return buildResult(a, fb, null, dealer, total, soft, 'hard');
+}
+
+// ──────────────────────────────────────────────────
+// Genera el objeto resultado con explicación
+// ──────────────────────────────────────────────────
+function buildResult(action, fallback, pairVal, d, total, soft, type) {
+  const dl = dLabel(d);
+  const fbMap = { H:'pide carta', S:'plántate', D:'dobla', SP:'divide', SR:'ríndete' };
+  const fbText = fallback ? ` Si no puedes, ${fbMap[fallback]}.` : '';
+
+  let reason = '';
+
+  if (action === 'SP') {
+    const pv = pairVal;
+    if (pv === 11) reason = 'Ases: SIEMPRE divide. Juntos solo suman 12. Divididos, cada As empieza en 11 con gran probabilidad de llegar a 21.';
+    else if (pv === 8) reason = 'Par de 8s (=16): SIEMPRE divide. El 16 duro es la peor mano del blackjack. Dividir convierte una mano perdedora en dos con potencial.';
+    else if (pv === 9) reason = `Par de 9s (=18) contra ${dl}: divide. Dos manos de 9 tienen mejor EV que el 18 aquí.`;
+    else if (pv === 7) reason = `Par de 7s contra ${dl} débil: divide. Tu 14 es mala mano; dos de 7 aprovechan la debilidad del dealer.`;
+    else if (pv === 6) reason = `Par de 6s contra ${dl} débil: divide. El 12 es peligroso; dos manos de 6 te dan más opciones.`;
+    else if (pv === 4) reason = `Par de 4s contra ${dl} (su zona más débil): divide con DAS.`;
+    else reason = `Par de ${pv}s contra ${dl} débil: divide. El dealer tiene alta probabilidad de bust.`;
+
+  } else if (action === 'S') {
+    if (pairVal === 10) reason = 'Par de 10s (=20): NUNCA dividas. El 20 es casi imbatible — dividirlo convierte tu mejor mano en dos inciertas.';
+    else if (pairVal === 9) reason = `Par de 9s (=18) contra ${dl}: plántate. Tu 18 es competitivo aquí — dividir solo arriesgaría una mano fuerte.`;
+    else if (type === 'soft') reason = `Mano blanda ${total} contra ${dl}: plántate.${total >= 19 ? ' Tienes una mano excelente.' : ' Tu ' + total + ' blando es competitivo aquí.'}`;
+    else if (total >= 17) reason = `${total} duro: plántate siempre. Con ${total}+ el riesgo de bust al pedir supera cualquier mejora posible.`;
+    else reason = `${total} contra ${dl} débil: plántate. El dealer tiene ${d<=3?'35%':d<=4?'40%':'42%'}+ de probabilidad de bust. Deja que se pase él.`;
+
+  } else if (action === 'H') {
+    if (type === 'soft') reason = `${total} blando contra ${dl}: pide carta. El As te protege del bust.${fbText}`;
+    else if (total <= 11) reason = `${total} contra ${dl}: pide carta — no puedes pasarte con una sola carta.${fbText}`;
+    else reason = `${total} contra ${dl} fuerte: pide carta. Debes competir — plantarse casi garantiza perder.${fbText}`;
+
+  } else if (action === 'D') {
+    if (type === 'soft') reason = `${total} blando contra ${dl} débil: dobla. Tienes ${total} como piso y alta probabilidad de mejorar con el dealer vulnerable.${fbText}`;
+    else if (total === 11) reason = `11 contra ${dl}: dobla siempre. Hay 4/13 probabilidades de sacar un 10 y llegar a 21. Mayor EV de todo el juego.${fbText}`;
+    else if (total === 10) reason = `10 contra ${dl}: dobla. Alta probabilidad de llegar a 20 mientras el dealer es débil.${fbText}`;
+    else reason = `${total} contra ${dl} débil: dobla. El dealer tiene alta probabilidad de bust y tú de mejorar.${fbText}`;
+
+  } else if (action === 'SR') {
+    if (total === 17) reason = '17 duro contra As: ríndete (late surrender). EV de rendirse (−0.50) supera al de plantarse (−0.54) con el As del dealer.';
+    else if (total === 16) reason = `16 duro contra ${dl}: ríndete. EV(rendirse)=−0.50 supera a pedir carta (−0.54 a −0.57). Pierdes menos la mitad que jugando.`;
+    else reason = `${total} duro contra ${dl}: ríndete. El EV de rendirse (−0.50) es mejor que cualquier otra jugada aquí.`;
+  }
+
+  return { action, reason };
+}
+
+// ──────────────────────────────────────────────────
+// MAIN: obtiene consejo y actualiza UI
+// ──────────────────────────────────────────────────
+function getAdvice() {
+  if (!dealerVal || playerCards.length < 2) return;
+
+  const { total, soft } = calcTotal(playerCards);
+
+  if (total > 21) {
+    showResult('💥 TE PASASTE', 'bust', `Tu total es ${total}. La mano termina aquí.`, `Total: ${total}`);
+    finishHand();
+    return;
+  }
+
+  const isFirstTwo = playerCards.length === 2;
+  const isPair     = isFirstTwo && playerCards[0].val === playerCards[1].val;
+  const result     = strategy(playerCards, dealerVal);
+
+  const typeLabel  = isPair ? `Par de ${playerCards[0].label}s` : soft ? 'Mano blanda' : 'Mano dura';
+  showResult(null, result.action, result.reason, `${typeLabel} · Total: ${total}`);
+
+  if (result.action === 'H') {
+    addCardSlot(awaitingCard);
+    document.getElementById('reset-btn').style.display = 'block';
+  } else {
+    finishHand();
+  }
+}
+
+buildDealerPicker();
+</script>
+</body>
+</html>
